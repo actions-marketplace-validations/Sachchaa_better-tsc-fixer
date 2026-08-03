@@ -51,7 +51,7 @@ ${errorList}
 async function fixFile(
   filePath: string,
   errors: TscError[],
-  provider: 'anthropic' | 'openai',
+  provider: 'anthropic' | 'openai' | 'openrouter',
   apiKey: string,
   model: string,
 ): Promise<FixResult | null> {
@@ -105,7 +105,7 @@ function applyFix(result: FixResult): void {
 export async function fixLoop(
   maxRetries: number,
   tsconfigPath: string,
-  provider: 'anthropic' | 'openai',
+  provider: 'anthropic' | 'openai' | 'openrouter',
   apiKey: string,
   model: string,
 ): Promise<FixSummary> {

@@ -12,17 +12,20 @@ inputs:
     required: false
     default: 'push'
   llm-provider:
-    description: 'LLM provider to use: "anthropic" or "openai"'
+    description: 'LLM provider to use: "anthropic", "openai", or "openrouter"'
     required: false
     default: 'anthropic'
   model:
-    description: 'Model name to use (e.g. "claude-sonnet-4-20250514", "gpt-4o"). Defaults to the best model for the chosen provider.'
+    description: 'Model name to use (e.g. "claude-sonnet-4-20250514", "gpt-4o", "openai/gpt-4o"). Defaults to the best model for the chosen provider.'
     required: false
   anthropic-api-key:
     description: 'Anthropic API key (required if llm-provider is "anthropic")'
     required: false
   openai-api-key:
     description: 'OpenAI API key (required if llm-provider is "openai")'
+    required: false
+  openrouter-api-key:
+    description: 'OpenRouter API key (required if llm-provider is "openrouter")'
     required: false
   github-token:
     description: 'GitHub token for pushing commits or creating PRs'

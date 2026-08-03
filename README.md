@@ -4,7 +4,7 @@
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-better--tsc--fixer-blue?logo=github)](https://github.com/marketplace/actions/better-tsc-fixer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A GitHub Action that automatically detects and fixes TypeScript type errors using AI. Supports **Anthropic** and **OpenAI**. Delivers fixes via direct push or pull request — your choice.
+A GitHub Action that automatically detects and fixes TypeScript type errors using AI. Supports **Anthropic**, **OpenAI**, and **OpenRouter** (access 300+ models via a single key). Delivers fixes via direct push or pull request — your choice.
 
 ## How It Works
 
@@ -56,10 +56,11 @@ Then add your API key as a repository secret (`Settings → Secrets → Actions`
 | Input | Description | Required | Default |
 |---|---|---|---|
 | `fix-mode` | How to deliver fixes: `push` (commit to branch) or `pr` (open a pull request) | No | `push` |
-| `llm-provider` | LLM provider: `anthropic` or `openai` | No | `anthropic` |
-| `model` | Model name to use (e.g. `claude-sonnet-4-20250514`, `gpt-4o`) | No | Best model for provider |
+| `llm-provider` | LLM provider: `anthropic`, `openai`, or `openrouter` | No | `anthropic` |
+| `model` | Model name to use (e.g. `claude-sonnet-4-20250514`, `gpt-4o`, `openai/gpt-4o`) | No | Best model for provider |
 | `anthropic-api-key` | Anthropic API key | If provider is `anthropic` | — |
 | `openai-api-key` | OpenAI API key | If provider is `openai` | — |
+| `openrouter-api-key` | OpenRouter API key | If provider is `openrouter` | — |
 | `github-token` | GitHub token for pushing / creating PRs | Yes | `${{ github.token }}` |
 | `max-retries` | Maximum fix iterations | No | `3` |
 | `tsconfig-path` | Path to tsconfig.json | No | `tsconfig.json` |
@@ -92,6 +93,20 @@ Then add your API key as a repository secret (`Settings → Secrets → Actions`
     fix-mode: 'pr'
     llm-provider: 'openai'
     openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### PR mode with OpenRouter
+
+Use any of 300+ models from a single API key via [OpenRouter](https://openrouter.ai):
+
+```yaml
+- uses: Sachchaa/better-tsc-fixer@v1
+  with:
+    fix-mode: 'pr'
+    llm-provider: 'openrouter'
+    model: 'anthropic/claude-3.5-sonnet'   # or any model slug from openrouter.ai
+    openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 

@@ -4,17 +4,21 @@ import { logInfo } from './utils';
 const DEFAULT_MODELS: Record<string, string> = {
   anthropic: 'claude-sonnet-4-20250514',
   openai: 'gpt-4o',
+  openrouter: 'openai/gpt-4o',
 };
 
 export async function callLLM(
   prompt: string,
-  provider: 'anthropic' | 'openai',
+  provider: 'anthropic' | 'openai' | 'openrouter',
   apiKey: string,
   model: string,
 ): Promise<LLMResponse> {
   const resolvedModel = model || DEFAULT_MODELS[provider];
   if (provider === 'anthropic') {
     return callAnthropic(prompt, apiKey, resolvedModel);
+  }
+  if (provider === 'openrouter') {
+    return callOpenRouter(prompt, apiKey, resolvedModel);
   }
   return callOpenAI(prompt, apiKey, resolvedModel);
 }
@@ -112,6 +116,65 @@ async function callOpenAI(
 
   if (!choice?.message?.content) {
     throw new Error('No content in OpenAI response');
+  }
+
+  return {
+    content: choice.message.content,
+    model: data.model,
+    usage: {
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    },
+  };
+}
+
+async function callOpenRouter(
+  prompt: string,
+  apiKey: string,
+  model: string,
+): Promise<LLMResponse> {
+  logInfo(`Calling OpenRouter API (model: ${model})...`);
+
+  const response = await fetch(
+    'https://openrouter.ai/api/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://github.com/Sachchaa/better-tsc-fixer',
+        'X-Title': 'better-tsc-fixer',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 8192,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a TypeScript expert. Fix only the type errors specified. Do not refactor, rename, or change any logic. Return the complete corrected file inside a single fenced code block.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `OpenRouter API error (${response.status}): ${errorBody}`,
+    );
+  }
+
+  const data = await response.json();
+  const choice = data.choices?.[0];
+
+  if (!choice?.message?.content) {
+    throw new Error('No content in OpenRouter response');
   }
 
   return {

@@ -25971,13 +25971,24 @@ function getInputs() {
     if (fixMode !== 'push' && fixMode !== 'pr') {
         throw new Error(`Invalid fix-mode: "${fixMode}". Must be "push" or "pr".`);
     }
-    if (llmProvider !== 'anthropic' && llmProvider !== 'openai') {
-        throw new Error(`Invalid llm-provider: "${llmProvider}". Must be "anthropic" or "openai".`);
+    if (llmProvider !== 'anthropic' && llmProvider !== 'openai' && llmProvider !== 'openrouter') {
+        throw new Error(`Invalid llm-provider: "${llmProvider}". Must be "anthropic", "openai", or "openrouter".`);
     }
-    const apiKey = llmProvider === 'anthropic' ? anthropicKey : openaiKey;
+    const openrouterKey = core.getInput('openrouter-api-key');
+    const apiKeyMap = {
+        anthropic: anthropicKey,
+        openai: openaiKey,
+        openrouter: openrouterKey,
+    };
+    const inputNameMap = {
+        anthropic: 'anthropic-api-key',
+        openai: 'openai-api-key',
+        openrouter: 'openrouter-api-key',
+    };
+    const apiKey = apiKeyMap[llmProvider];
     if (!apiKey) {
         throw new Error(`Missing API key for provider "${llmProvider}". ` +
-            `Set the "${llmProvider === 'anthropic' ? 'anthropic-api-key' : 'openai-api-key'}" input.`);
+            `Set the "${inputNameMap[llmProvider]}" input.`);
     }
     return {
         fixMode: fixMode,
@@ -26071,11 +26082,15 @@ const utils_1 = __nccwpck_require__(6087);
 const DEFAULT_MODELS = {
     anthropic: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
+    openrouter: 'openai/gpt-4o',
 };
 async function callLLM(prompt, provider, apiKey, model) {
     const resolvedModel = model || DEFAULT_MODELS[provider];
     if (provider === 'anthropic') {
         return callAnthropic(prompt, apiKey, resolvedModel);
+    }
+    if (provider === 'openrouter') {
+        return callOpenRouter(prompt, apiKey, resolvedModel);
     }
     return callOpenAI(prompt, apiKey, resolvedModel);
 }
@@ -26148,6 +26163,49 @@ async function callOpenAI(prompt, apiKey, model) {
     const choice = data.choices?.[0];
     if (!choice?.message?.content) {
         throw new Error('No content in OpenAI response');
+    }
+    return {
+        content: choice.message.content,
+        model: data.model,
+        usage: {
+            inputTokens: data.usage?.prompt_tokens ?? 0,
+            outputTokens: data.usage?.completion_tokens ?? 0,
+        },
+    };
+}
+async function callOpenRouter(prompt, apiKey, model) {
+    (0, utils_1.logInfo)(`Calling OpenRouter API (model: ${model})...`);
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            'HTTP-Referer': 'https://github.com/Sachchaa/better-tsc-fixer',
+            'X-Title': 'better-tsc-fixer',
+        },
+        body: JSON.stringify({
+            model,
+            max_tokens: 8192,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a TypeScript expert. Fix only the type errors specified. Do not refactor, rename, or change any logic. Return the complete corrected file inside a single fenced code block.',
+                },
+                {
+                    role: 'user',
+                    content: prompt,
+                },
+            ],
+        }),
+    });
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`OpenRouter API error (${response.status}): ${errorBody}`);
+    }
+    const data = await response.json();
+    const choice = data.choices?.[0];
+    if (!choice?.message?.content) {
+        throw new Error('No content in OpenRouter response');
     }
     return {
         content: choice.message.content,

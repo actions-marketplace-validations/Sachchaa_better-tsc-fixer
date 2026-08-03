@@ -34,25 +34,35 @@ function getInputs(): ActionInputs {
     throw new Error(`Invalid fix-mode: "${fixMode}". Must be "push" or "pr".`);
   }
 
-  if (llmProvider !== 'anthropic' && llmProvider !== 'openai') {
+  if (llmProvider !== 'anthropic' && llmProvider !== 'openai' && llmProvider !== 'openrouter') {
     throw new Error(
-      `Invalid llm-provider: "${llmProvider}". Must be "anthropic" or "openai".`,
+      `Invalid llm-provider: "${llmProvider}". Must be "anthropic", "openai", or "openrouter".`,
     );
   }
 
-  const apiKey =
-    llmProvider === 'anthropic' ? anthropicKey : openaiKey;
+  const openrouterKey = core.getInput('openrouter-api-key');
+  const apiKeyMap: Record<string, string> = {
+    anthropic: anthropicKey,
+    openai: openaiKey,
+    openrouter: openrouterKey,
+  };
+  const inputNameMap: Record<string, string> = {
+    anthropic: 'anthropic-api-key',
+    openai: 'openai-api-key',
+    openrouter: 'openrouter-api-key',
+  };
+  const apiKey = apiKeyMap[llmProvider];
 
   if (!apiKey) {
     throw new Error(
       `Missing API key for provider "${llmProvider}". ` +
-        `Set the "${llmProvider === 'anthropic' ? 'anthropic-api-key' : 'openai-api-key'}" input.`,
+        `Set the "${inputNameMap[llmProvider]}" input.`,
     );
   }
 
   return {
     fixMode: fixMode as 'push' | 'pr',
-    llmProvider: llmProvider as 'anthropic' | 'openai',
+    llmProvider: llmProvider as 'anthropic' | 'openai' | 'openrouter',
     model,
     apiKey,
     githubToken,

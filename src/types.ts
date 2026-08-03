@@ -8,7 +8,7 @@ export interface TscError {
 
 export interface ActionInputs {
   fixMode: 'push' | 'pr';
-  llmProvider: 'anthropic' | 'openai';
+  llmProvider: 'anthropic' | 'openai' | 'openrouter';
   model: string;
   apiKey: string;
   githubToken: string;
